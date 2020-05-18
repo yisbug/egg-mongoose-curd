@@ -1,12 +1,10 @@
-'use strict';
-
 module.exports = {
   // 新增
   async create(payload) {
     // 生成salt
     payload.salt = this.ctx.sha256(this.app.mongoose.Types.ObjectId().toString());
     // 加密密码
-    payload.password = this.ctx.sha256(payload.password + payload.salt + this.config.schema.secret);
+    payload.password = this.ctx.sha256(payload.password + payload.salt);
     const res = await this.model.create(payload);
     const user = res._doc;
     delete user.salt;
@@ -17,10 +15,10 @@ module.exports = {
   async update(id, payload) {
     const { ctx } = this;
     const user = await this.findOne(id);
-    if (!user) ctx.error(404, '记录不存在');
+    if (!user) throw new Error('记录不存在');
     // 加密密码
     if (payload.password) {
-      payload.password = ctx.sha256(payload.password + user.salt + this.config.schema.secret);
+      payload.password = ctx.sha256(payload.password + user.salt);
     }
     return this.model.findOneAndUpdate(this.getCondition(id), payload, {
       new: true,
@@ -30,9 +28,12 @@ module.exports = {
   async login(payload) {
     const { ctx } = this;
     const user = await this.findOne({ username: payload.username });
-    if (!user) ctx.error(404, '用户不存在');
-    const verifyPassword = this.ctx.verifysha256(payload.password + user.salt + this.config.schema.secret, user.password);
-    if (!verifyPassword) ctx.error(404, '密码错误');
+    if (!user) throw new Error('用户不存在');
+    const verifyPassword = this.ctx.verifysha256(
+      payload.password + user.salt + this.config.schema.secret,
+      user.password
+    );
+    if (!verifyPassword) throw new Error('密码错误');
     const lastLoginTime = new Date();
     await this.update(String(user._id), { lastLoginTime });
     const time = lastLoginTime.getTime();
@@ -64,7 +65,7 @@ module.exports = {
   // 获取详情
   async show(id) {
     const doc = await this.findOne(id);
-    if (!doc) this.ctx.error(404, '记录不存在');
+    if (!doc) throw new Error('记录不存在');
     const user = doc._doc;
     delete user.salt;
     delete user.password;

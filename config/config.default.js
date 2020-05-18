@@ -1,36 +1,22 @@
-'use strict';
-
 module.exports = () => {
   const config = {};
 
-  config.schema = {
-    extendBaseFields: true, // 是否扩展基础字段
-    service: true, // 是否自动生成 service
-    controller: true, // 是否自动生成 controller
-    baseFields: { // 基础字段
-      createAt: {
-        type: Date,
-        name: '创建时间',
-        default: Date.now,
-      },
-      creater: {
-        type: String,
-        name: '创建人',
-      },
-      lastUpTime: {
-        type: Date,
-        name: '最后更新时间',
-        default: Date.now,
-      },
-      lastUpUser: {
-        type: String,
-        name: '最后修改人',
-      },
+  config.keys = 'abcdefg';
+
+  config.cluster = {
+    listen: {
+      path: '',
+      port: 7001,
+      hostname: '0.0.0.0',
     },
-    extend: {
-      user: {},
+  };
+  config.mongoose = {
+    url: 'mongodb://localhost/example',
+    options: {
+      socketTimeoutMS: 1000 * 60 * 60, // 1小时超时
+      useCreateIndex: true, // 设置为true使Mongoose的默认索引构建使用，createIndex()而不是ensureIndex()避免MongoDB驱动程序的弃用警告。
+      useUnifiedTopology: true,
     },
-    secret: 'testd',
   };
 
   return config;

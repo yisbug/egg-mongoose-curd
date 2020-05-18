@@ -1,19 +1,11 @@
-'use strict';
-
 const moment = require('moment');
-const egg = require('egg');
 
-class Controller extends egg.Controller {
-  constructor(ctx) {
-    super(ctx);
-    this.createRule = {};
-    this.name = 'base';
-  }
+module.exports = {
   getService() {
     const service = this.service[this.name];
-    if (!service) throw new Error('没有找到对应的service:' + this.name);
+    if (!service) throw new Error(`没有找到对应的service:${this.name}`);
     return service;
-  }
+  },
   // 创建
   async create() {
     const { ctx } = this;
@@ -23,14 +15,14 @@ class Controller extends egg.Controller {
     const payload = ctx.request.body || {};
     const res = await this.getService().create(payload);
     ctx.success(res);
-  }
+  },
   // 删除单个
   async destroy() {
     const { ctx } = this;
     const { id } = ctx.params;
     await this.getService().destroy(id);
     ctx.success();
-  }
+  },
   // 修改
   async update() {
     const { ctx } = this;
@@ -41,7 +33,7 @@ class Controller extends egg.Controller {
     const payload = ctx.request.body || {};
     const doc = await this.getService().update(id, payload);
     ctx.success(doc);
-  }
+  },
 
   // 获取单个
   async show() {
@@ -49,7 +41,7 @@ class Controller extends egg.Controller {
     const { id } = ctx.params;
     const doc = await this.getService().show(id);
     ctx.success(doc);
-  }
+  },
 
   getSearchObject(query) {
     const { ctx } = this;
@@ -60,8 +52,8 @@ class Controller extends egg.Controller {
       if (prefix === '$') {
         key = key.substr(1);
       }
-      const schema = this.getService().schema;
-      if (!schema) ctx.error(500, `controller.${this.name}中找不到字段${key}对应的schema`);
+      const schema = this.getService().schema[key];
+      if (!schema) return search;
       const type = schema.type || schema;
       if (prefix === '$') {
         if (type instanceof String) {
@@ -70,10 +62,12 @@ class Controller extends egg.Controller {
           try {
             const searchObj = JSON.parse(value);
             search[key] = {};
-            if (typeof searchObj.$gt !== 'object') search[key].$gt = searchObj.$gt;
-            if (typeof searchObj.$gte !== 'object') search[key].$gte = searchObj.$gte;
-            if (typeof searchObj.$lt !== 'object') search[key].$lt = searchObj.$lt;
-            if (typeof searchObj.$lte !== 'object') search[key].$lte = searchObj.$lte;
+            const disableTypes = ['undefined', 'object', 'function'];
+            const props = ['$gt', '$gte', '$lt', '$lte'];
+            props.forEach(prop => {
+              if (!disableTypes.includes(typeof searchObj[prop]))
+                search[key][prop] = searchObj[prop];
+            });
             if (type instanceof Date) {
               search[key] = Object.keys(search[key]).reduce((o, item) => {
                 o[item] = moment(search[key][item]).toDate();
@@ -84,17 +78,14 @@ class Controller extends egg.Controller {
             ctx.error(400, `搜索参数格式错误:${value}`);
           }
         }
+      } else if (type instanceof Date) {
+        search[key] = moment(value).toDate();
       } else {
-        if (type instanceof Date) {
-          search[key] = moment(value).toDate();
-        } else {
-          search[key] = value;
-        }
+        search[key] = value;
       }
     });
     return search;
-  }
-
+  },
   // 获取所有(分页/模糊)
   async index() {
     const { ctx } = this;
@@ -103,7 +94,7 @@ class Controller extends egg.Controller {
     const search = this.getSearchObject(query);
     const res = await this.getService().index({ isPaging, pageSize, current, search });
     ctx.success(res);
-  }
+  },
 
   // 删除所选(条件id[])
   // {id: ["5a452a44ab122b16a0231b42,5a452a3bab122b16a0231b41"]}
@@ -113,7 +104,5 @@ class Controller extends egg.Controller {
     const payload = id || [];
     await this.getService().removes(payload);
     ctx.success();
-  }
-}
-egg.BaseController = Controller;
-module.exports = Controller;
+  },
+};

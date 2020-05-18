@@ -1,0 +1,9 @@
+{
+  "editor.formatOnSave": true, // 优先使用 prettier-eslint
+
+  // eslint 插件配置部分
+  "eslint.enable": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  } // 保存文件时自动修复错误，仅支持 files.autoSave: false。
+}

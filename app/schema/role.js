@@ -1,5 +1,3 @@
-'use strict';
-
 // 角色表
 module.exports = {
   name: {
